@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Dziennik Tarota</title>
+
+    <!-- Fonty -->
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css?v=3.2.2">
+<script defer src="app.js?v=3.2.2"></script>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" href="icon-192.png" sizes="192x192">
+<link rel="apple-touch-icon" href="apple-touch-icon-180.png">
+<meta name="theme-color" content="#0b0a12">
+
+<!-- iOS: pełnoekranowe uruchamianie i kolor belki -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <!-- Pomocny baner błędów, gdyby coś padło -->
+    <script>
+      window.addEventListener('error', (e)=>{
+        const b=document.createElement('div');
+        b.style.cssText='position:fixed;left:8px;right:8px;bottom:8px;background:#b91c1c;color:#fff;padding:10px;border-radius:10px;z-index:9999;font:14px/1.4 Inter,system-ui';
+        b.textContent='Błąd JS: '+(e.error?.message||e.message);
+        document.body.appendChild(b);
+        setTimeout(()=>b.remove(),8000);
+      });
+    </script>
+  </head>
+  <body>
+    <header class="app-header" role="banner">
+      <div class="left">
+        <!-- HAMBURGER -->
+        <button id="openMenu" class="icon-btn" aria-label="Otwórz menu" title="Menu">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <h1>🔮 Dziennik Tarota</h1>
+      </div>
+      <div class="actions">
+        <button id="toggleTheme" class="btn small" title="Przełącz motyw">Motyw</button>
+        <button id="exportBtn" class="btn small">Eksport</button>
+        <label class="btn small" style="cursor: pointer;">Import
+          <input id="importFile" type="file" accept="application/json" hidden />
+        </label>
+      </div>
+    </header>
+
+    <!-- Na desktopie widać zakładki; na telefonie korzystamy z hamburgera -->
+    <nav class="tabs" role="tablist" aria-label="Nawigacja">
+      <button class="active" data-tab="cards" role="tab" aria-selected="true">Karty</button>
+      <button data-tab="daily" role="tab" aria-selected="false">Dziennik</button>
+      <button data-tab="summary" role="tab" aria-selected="false">Podsumowanie</button>
+      <button data-tab="help" role="tab" aria-selected="false">Pomoc</button>
+    </nav>
+
+    <main role="main">
+      <!-- KARTY -->
+      <section id="tab-cards" class="panel" role="tabpanel">
+        <div class="grid two">
+          <div>
+            <h3>Dodaj / edytuj kartę</h3>
+            <form id="cardForm">
+              <input type="hidden" id="cardId" />
+              <div class="field">
+                <label for="cardName">Nazwa karty *</label>
+                <input id="cardName" type="text" required placeholder="np. Głupiec / The Fool" />
+              </div>
+              <div class="field">
+                <label for="cardDesc">Opis (Twoje znaczenie)</label>
+                <textarea id="cardDesc" placeholder="Własna interpretacja, słowa-klucze, relacje, praca..."></textarea>
+              </div>
+              <div class="field">
+                <label>Ilustracja</label>
+                <div id="dropzone" class="dropzone" tabindex="0">Upuść obrazek tutaj lub kliknij, aby wybrać plik</div>
+                <input id="cardImgFile" type="file" accept="image/*" hidden />
+                <div class="field" style="margin-top:8px">
+                  <label for="cardImgUrl">…albo podaj adres URL</label>
+                  <input id="cardImgUrl" type="url" placeholder="https://…" />
+                  <div class="hint">Jeśli dodasz plik — zapisze się lokalnie (base64). Adres URL pozostanie linkiem.</div>
+                </div>
+              </div>
+              <div class="row">
+                <button class="btn primary" type="submit">Zapisz kartę</button>
+                <button class="btn" type="button" id="resetCardForm">Wyczyść</button>
+                <span class="spacer"></span>
+                <button class="btn danger" type="button" id="deleteCardBtn" style="display:none">Usuń kartę</button>
+              </div>
+            </form>
+          </div>
+          <div>
+            <div class="toolbar">
+              <input id="cardSearch" type="search" placeholder="Szukaj karty…" />
+              <span class="spacer"></span>
+              <button id="newCardBtn" class="btn small">+ Nowa karta</button>
+            </div>
+            <div id="cardsGrid" class="cards-grid" aria-live="polite"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- DZIENNIK -->
+      <section id="tab-daily" class="panel" role="tabpanel" hidden>
+        <h3>Dzienne notatki</h3>
+        <form id="dailyForm">
+          <div class="grid two">
+            <div>
+              <div class="field inline">
+                <label for="dailyDate">Data</label>
+                <input id="dailyDate" type="date" required />
+              </div>
+              <div class="field">
+                <label for="dailyCard">Karta dnia</label>
+                <div class="row wrap">
+                  <select id="dailyCard" required title="Wybierz kartę z listy"></select>
+                  <button type="button" class="btn" id="pickFromGalleryBtn">Wybierz z galerii</button>
+                  <button type="button" class="btn" id="drawRandomBtn" title="Losuj kartę z talii">Losuj</button>
+                </div>
+              </div>
+
+              <div class="field">
+                <label for="moodInput">Nastrój (tagi)</label>
+                <div id="moodChips" class="chips" aria-live="polite"></div>
+                <input id="moodInput" type="text" placeholder="Wpisz nastrój i wciśnij Enter (np. spokojny, wdzięczny)…" />
+                <div id="moodSuggestions" class="suggestions"></div>
+              </div>
+
+              <div class="field">
+                <label for="feelingsText">Uczucia / słowa klucze</label>
+                <input id="feelingsText" type="text" placeholder="np. wdzięczność, nadzieja, ekscytacja" />
+              </div>
+
+              <div class="field">
+                <label for="eventsText">Co mnie spotkało?</label>
+                <textarea id="eventsText" placeholder="Wydarzenia dnia, obserwacje, synchroniczności…"></textarea>
+              </div>
+
+              <div class="field">
+                <label for="dailyNote">Notatka</label>
+                <textarea id="dailyNote" placeholder="Jak objawiła się energia karty? Sytuacje, wnioski…"></textarea>
+              </div>
+
+              <div class="row">
+                <button class="btn success" type="submit">Zapisz wpis</button>
+                <button class="btn" type="button" id="clearDaily">Wyczyść</button>
+              </div>
+            </div>
+
+            <div>
+              <div class="field">
+                <label>Podgląd</label>
+                <div id="dailyPreview" class="row preview">
+                  <img id="dailyPreviewImg" alt="Podgląd karty" />
+                  <div>
+                    <div id="dailyPreviewTitle" class="title"></div>
+                    <div id="dailyPreviewDesc" class="muted" style="max-width:520px"></div>
+                    <div id="dailyPreviewMoods" class="chips muted" style="margin-top:8px"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+
+        <h3>Twoje wpisy</h3>
+        <div class="toolbar">
+          <input id="entrySearch" type="search" placeholder="Filtruj po nazwie karty, tekście lub nastroju…" />
+          <span class="spacer"></span>
+          <label class="muted" style="display:flex; align-items:center; gap:6px;">
+            Od <input id="filterFrom" type="date" /> Do <input id="filterTo" type="date" />
+          </label>
+        </div>
+        <div id="entriesList" class="list"></div>
+      </section>
+
+      <!-- PODSUMOWANIE -->
+      <section id="tab-summary" class="panel" role="tabpanel" hidden>
+        <h3>Tygodniowe podsumowanie</h3>
+        <div class="row wrap">
+          <label class="row" style="gap:6px; align-items:center;">
+            <input type="radio" name="range" value="last7" checked /> Ostatnie 7 dni
+          </label>
+          <label class="row" style="gap:6px; align-items:center;">
+            <input type="radio" name="range" value="week" /> Bieżący tydzień (pon-niedz)
+          </label>
+          <span class="spacer"></span>
+          <label class="row" style="gap:6px; align-items:center;">
+            Początek tygodnia: <input id="weekStart" type="date" />
+          </label>
+        </div>
+        <div class="kpi" id="kpi"></div>
+        <h4>Najczęstsze karty</h4>
+        <div id="summaryTop" class="list"></div>
+        <h4 style="margin-top:14px;">Nastroje w okresie</h4>
+        <div id="moodTop" class="list"></div>
+        <h4>Wpisy w okresie</h4>
+        <div id="summaryEntries" class="list"></div>
+      </section>
+
+      <!-- POMOC -->
+      <section id="tab-help" class="panel help" role="tabpanel" hidden>
+        <h3>Jak to działa?</h3>
+        <ol>
+          <li>W zakładce <b>Karty</b> dodaj własne karty (nazwa, opis i ilustracja z pliku lub adresu URL).</li>
+          <li>W <b>Dziennik</b> wybierz datę, wskaż kartę dnia, uzupełnij nastroje, uczucia, wydarzenia i notatkę.</li>
+          <li>W <b>Podsumowaniu</b> zobaczysz statystyki i najczęstsze karty oraz nastroje.</li>
+        </ol>
+        <p>Wszystko zapisuje się lokalnie (localStorage). Możesz <b>Eksportować</b> do JSON i później <b>Importować</b>.</p>
+      </section>
+    </main>
+
+    <!-- MODAL WYBORU KARTY -->
+    <dialog id="pickDialog">
+      <div class="modal">
+        <header class="modal-header">
+          <div class="row">
+            <strong>Wybierz kartę</strong>
+            <span class="spacer"></span>
+            <input id="pickSearch" type="search" placeholder="Szukaj…" />
+            <button id="closePickDialog" class="btn small">Zamknij</button>
+          </div>
+        </header>
+        <div class="modal-body">
+          <div id="pickGrid" class="cards-grid"></div>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- MENU (HAMBURGER) NA MOBILE -->
+    <dialog id="navDialog">
+      <div class="modal">
+        <header class="modal-header">
+          <div class="row">
+            <strong>Nawigacja</strong>
+            <span class="spacer"></span>
+            <button id="closeNavDialog" class="btn small">Zamknij</button>
+          </div>
+        </header>
+        <div class="modal-body">
+          <div class="menu-list">
+            <button class="menu-item" data-goto="cards">Karty</button>
+            <button class="menu-item" data-goto="daily">Dziennik</button>
+            <button class="menu-item" data-goto="summary">Podsumowanie</button>
+            <button class="menu-item" data-goto="help">Pomoc</button>
+          </div>
+        </div>
+      </div>
+    </dialog>
+  </body>
+</html>
