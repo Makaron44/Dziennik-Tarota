@@ -205,3 +205,25 @@ input[type="search"], select{
     letter-spacing: .2px;
   }
 }
+/* ==== FIX: Podgląd w "Dzienne notatki" nie ściska obrazka ==== */
+.preview{
+  display:flex; flex-wrap:wrap; gap:14px; align-items:flex-start;
+}
+
+/* obrazek – nie pozwalamy mu się kurczyć */
+#dailyPreviewImg{
+  flex:0 0 120px; /* stałe 120px obok tekstu */
+  width:120px; height:200px; object-fit:cover;
+}
+
+/* prawa kolumna: może się zwężać, a gdy brakuje miejsca – wskakuje pod obrazek */
+.preview > div{
+  min-width:0;            /* ważne na iOS, żeby treść mogła się zawijać */
+  flex:1 1 240px;         /* docelowo obok obrazka */
+}
+@media (max-width: 480px){
+  .preview > div{ flex-basis:100%; } /* na wąskich ekranach całość pod obrazkiem */
+}
+
+/* chipy niech ładnie się łamią i nie wypychają układu */
+#dailyPreviewMoods{ display:flex; flex-wrap:wrap; gap:6px; }
