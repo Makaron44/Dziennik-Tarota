@@ -3,7 +3,7 @@
 
 (function(){
   // ====== STORAGE / UTIL ======
-  const LS = { cards:'TAROT_CARDS_V32', entries:'TAROT_ENTRIES_V32', settings:'TAROT_SETTINGS_V32' };
+  const LS = { cards:'TAROT_CARDS_V33', entries:'TAROT_ENTRIES_V33', settings:'TAROT_SETTINGS_V33' };
   const $  = s => document.querySelector(s);
   const $$ = s => Array.from(document.querySelectorAll(s));
   const Jget = (k,f) => { try { return JSON.parse(localStorage.getItem(k)) ?? f; } catch { return f; } };
